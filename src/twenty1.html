@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>point21</title>
+    <script src="https://cdn.staticfile.org/vue/3.2.36/vue.global.min.js"></script>
+    <style>
+        html,
+        body,
+        #box {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            background-image: url(../images/background.jpg);
+            background-size: 100% auto;
+            background-repeat: no-repeat;
+        }
+
+        #box {
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .btn input {
+            font-size: large;
+            border-radius: 10;
+            margin: 3px;
+            margin-top: 7px;
+            margin-bottom: 7px;
+        }
+
+        .computer,
+        .player {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .img {
+            display: flex;
+            margin-top: 15px;
+        }
+
+        .start {
+            position: relative;
+            top: 30%;
+            border: 0px;
+            color: white;
+            background-color: darksalmon;
+            padding: 5px 20px;
+            border-radius: 2%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="box">
+        <div class="computer">
+            <div class="img">
+                <img src="../images/page.png" v-show="isCover" :style="imgpages">
+                <div v-for="item in computer">
+                    <img :src=item.image>
+                </div>
+            </div>
+            <div v-show="isShow">庄家</div>
+            <div v-show="isCompare">庄家的点数为：{{cScore}}</div>
+        </div>
+        <div class="btn">
+            <input type="button" class="start" v-show="isBegin" value="开始游戏" @click="start()">
+            <input type="button" v-show="isShow" :disabled="isAdd" value="加牌" @click="add">
+            <input type="button" v-show="isShow" :disabled="isStart" value="比较" @click="compare">
+            <input type="button" v-show="isShow" :disabled="isStart" value="认输" @click="fail">
+            <input type="button" v-show="isShow" :disabled="!isStart" value="继续游戏" @click="keep">
+            <input type="button" v-show="isShow" :disabled="!isStart" value="结束本局" @click="end">
+        </div>
+        <div class="player">
+            <div v-show="isShow">玩家</div>
+            <div class="img">
+                <div v-for="item in player">
+                    <img :src=item.image>
+                </div>
+            </div>
+            <div v-show="isShow">你的点数为：{{pScore}}</div>
+        </div>
+        <div v-show="isShow">剩余牌数：{{this.cards.length}}</div>
+        <div v-show="isShow" class="score">
+            庄家：<input type="button" :value="numc" />|
+            玩家：<input type="button" :value="nump" />
+        </div>
+    </div>
+    <script>
+        const a = Vue.createApp({
+            data() {
+                return {
+                    numc: 0,//庄家赢
+                    nump: 0,//玩家赢
+                    isAdd: false,   //是否加牌
+                    isCover: true,  //是否需要封面
+                    isCompare: false,//比较时显示
+                    isBegin: true,  //刚开始
+                    isShow: false,  //发牌后显示
+                    isStart: false, //不可点击
+                    computer: [],
+                    player: [],
+                    cards: [],
+                    imgpages: {}
+                }
+            },
+            watch: {
+                cards: {
+                    handler() {
+                        //将所有牌存进cards数组
+                        for (let i = 1; i <= 13; i++) {
+                            this.cards.push(
+                                { num: i, image: '../pokercards/' + i + 'club.png' },
+                                { num: i, image: '../pokercards/' + i + 'heart.png' },
+                                { num: i, image: '../pokercards/' + i + 'spade.png' },
+                                { num: i, image: '../pokercards/' + i + 'diamond.png' })
+                        }
+                        //洗牌，打乱牌的顺序
+                        for (let i = this.cards.length - 1; i >= 0; i--) {
+                            let j = Math.floor(Math.random() * i);
+                            var temp = this.cards[i];
+                            this.cards[i] = this.cards[j];
+                            this.cards[j] = temp;
+                        }
+                        // console.log(this.cards);
+                        return this.cards;
+                    },
+                    immediate: true     //初始化时进行操作
+                }
+            },
+            computed: {
+                pScore() {   //计算player的牌面
+                    let one = 0;
+                    for (let item in this.player) {
+                        if (this.player[item].num > 10) {
+                            this.player[item].num = 10
+                        }
+                        if (this.player[item].num == 1) {
+                            this.player[item].num = 11
+                        }
+                        one += this.player[item].num
+                    }
+                    if (one > 21) {//若牌面大于21且牌面有A，则认为A为1，
+                        let one1 = 0;
+                        for (let item in this.player) {
+                            if (this.player[item].num == 11) {
+                                this.player[item].num = 1
+                            }
+                            one1 += this.player[item].num
+                        }
+                        console.log("hahaha", one1);
+                        return one1;
+                    } else {
+                        console.log("yayaya", one);
+                        return one;
+                    }
+                },
+                cScore() {    //计算computer的牌面
+                    let two = 0;
+                    for (let item in this.computer) {
+                        if (this.computer[item].num > 10) {
+                            this.computer[item].num = 10    //10，J，Q，K 为10点
+                        }
+                        if (this.computer[item].num == 1) {
+                            this.computer[item].num = 11
+                        }
+                        two += this.computer[item].num
+                    }
+                    // console.log("2", two);
+                    if (two > 21) {//若牌面大于21且牌面有A，则认为A为1，
+                        let two1 = 0;
+                        for (let item in this.computer) {
+                            if (this.computer[item].num == 11) {
+                                this.computer[item].num = 1
+                            }
+                            two1 += this.computer[item].num
+                        }
+                        console.log("hahaha", two1);
+                        return two1;
+                    } else {
+                        console.log("yayaya", two);
+                        return two;
+                    }
+                }
+            },
+            methods: {
+                start() {   //开始游戏
+                    this.computer = []
+                    this.player = []
+                    this.isCover = true
+                    this.isCompare = false
+                    this.isShow = true
+                    this.isBegin = false
+                    this.imgpages = { position: "absolute" }
+                    for (let i = 0; i < 2; i++) {    //初始发牌操作，各两张
+                        this.computer.push(this.cards[0])
+                        this.cards.shift()
+                        this.player.push(this.cards[0])
+                        this.cards.shift()
+                    }
+                },
+                keep() {    //继续游戏
+                    this.isStart = false
+                    this.isAdd = false
+                    if (this.cards.length < 4) {
+                        alert("本局已结束，请重新开始")
+                        this.cards = []
+                        this.end()
+                    } else {
+                        this.start()
+                    }
+                },
+                add() {     //添加牌
+                    this.player.push(this.cards[0])
+                    this.cards.shift()
+                    if (this.pScore > 21) {
+                        this.isAdd = true
+                        for (let i = 0; i < this.player.length; i++) {
+                            if (this.player[i].num == 11) {
+                                this.one -= 10
+                            }
+                        }
+                        alert("你爆了，淡定淡定")
+                    } else {
+
+                    }
+                },
+                compare() {     //比较
+                    this.isAdd = true
+                    this.isStart = true
+                    this.isCompare = true
+                    this.isCover = false
+                    // console.log(this.pScore);
+                    if (this.cards.length != 0) { //庄家的牌面<16，加牌
+                        while (this.cScore < 16) {
+                            this.computer.push(this.cards[0])
+                            this.cards.shift()
+                        }
+                    }
+                    if (this.cScore > 21 && this.pScore > 21) {
+                        alert("都爆了，庄家赢")
+                        this.numc++;
+                    } else if (this.cScore > 21 && this.pScore <= 21) {
+                        alert("庄家爆了，你赢了")
+                        this.nump++;
+                    } else if (this.pScore > 21 && this.cScore <= 21) {
+                        alert("你爆了，庄家赢了")
+                        this.numc++;
+                    } else if (this.pScore > this.cScore) {
+                        alert("恭喜你，你赢了")
+                        this.nump++;
+                    } else if (this.pScore < this.cScore) {
+                        alert("哈哈哈，你输了")
+                        this.numc++;
+                    } else {
+                        alert("哎呀哎呀，庄家大半点，哈哈哈")
+                        this.numc++;
+                    }
+                },
+                fail() {    //认输
+                    alert("你输了");
+                    this.isAdd = true
+                    this.isCover = false
+                    this.isStart = true
+                    this.numc++;
+                },
+                end() {     //结束本局
+                    console.log(this.numc, this.nump);
+                    alert("本局 庄家VS玩家 比分为 "+this.numc +"："+ this.nump);
+                    this.nump = 0;
+                    this.numc = 0;
+                    this.player = []
+                    this.computer = []
+                    this.cards = []
+                    this.isCover = true
+                    this.isCompare = false
+                    this.isBegin = true
+                    this.isShow = false
+                    this.imgpages = {}
+                }
+            },
+        })
+        a.mount("#box")
+    </script>
+</body>
+
+</html>
